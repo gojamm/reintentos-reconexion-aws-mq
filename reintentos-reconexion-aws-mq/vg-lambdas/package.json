@@ -1,0 +1,17 @@
+{
+  "name": "reenvio-mensaje-mq",
+  "version": "1.0.0",
+  "main": "src/handlers/ReenvioHandler.js",
+  "license": "",
+  "author": "",
+  "dependencies": {
+    "async-mqtt": "^2.6.1",
+    "redis": "^3.0.2",
+    "serverless": "^2.23.0",
+    "uuid": "^3.3.2"
+  },
+  "devDependencies": {
+    "serverless-offline": "^6.8.0",
+    "serverless-plugin-include-dependencies": "^4.1.0"
+  }
+}

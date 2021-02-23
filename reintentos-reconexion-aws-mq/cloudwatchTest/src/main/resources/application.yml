@@ -1,0 +1,7 @@
+mqtt:
+  hostname: b-5b033529-dd29-4cd5-8950-031a97339ade-1.mq.us-west-2.amazonaws.com
+  user: admin
+  password: MySuperSecurePassword
+  topic: proceso1
+  clientId: abc123
+  port: 61619

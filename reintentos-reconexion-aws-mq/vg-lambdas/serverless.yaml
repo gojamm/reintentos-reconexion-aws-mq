@@ -1,0 +1,77 @@
+org: gojamm
+service: vg-reenvio-mq
+app: reaseguro-vida-grupo
+
+frameworkVersion: '2.23.0'
+
+provider:
+  name: aws
+  runtime: nodejs10.x
+  timeout: 30
+  memorySize: 256
+  region: us-west-2
+  tags:
+    Application: reaseguros-control-desconexion
+    Environment: dev
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+      - dynamodb:PutItem
+      - dynamodb:Query
+      Resource:
+        Fn::GetAtt:
+          - reintentosTable
+          - Arn
+  environment:
+    MQ_HOST: b-5b033529-dd29-4cd5-8950-031a97339ade-1.mq.us-west-2.amazonaws.com
+    MQ_PASSWORD: MySuperSecurePassword
+    MQ_USERNAME: admin
+    MQ_PORT: 61619
+    APP_REGION: us-west-2
+    DDB_REINTENTOS: ReintentosDesconexiones
+    DDB_REINTENTOS_MINUTOS_TTL: 60
+    DDB_REINTENTOS_TOPE: 10
+    REDIS_HOST: cache-prueba.mr8fah.ng.0001.usw2.cache.amazonaws.com
+    REDIS_PORT: 6379
+
+package:
+  individually: true
+  exclude:
+    - node_modules/**
+  excludeDevDependencies: false
+
+plugins:
+  - serverless-plugin-include-dependencies
+  - serverless-offline
+
+functions:
+  reenvio-msq-mq:
+    handler: src/handlers/ReenvioHandler.handler
+    name: reenvioMsgMQ
+
+resources:
+  Resources:
+    reintentosTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ReintentosDesconexiones
+        AttributeDefinitions:
+          - AttributeName: msg
+            AttributeType: S
+          - AttributeName: date
+            AttributeType: N
+        KeySchema:
+          - AttributeName: msg
+            KeyType: HASH
+          - AttributeName: date
+            KeyType: RANGE  
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+        TimeToLiveSpecification:
+          AttributeName: ttl
+          Enabled: true
+        Tags:
+            - 
+              Key: 'Application'
+              Value: 'reaseguros-control-desconexion'
