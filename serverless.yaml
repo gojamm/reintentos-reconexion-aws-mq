@@ -1,0 +1,83 @@
+service: vg-reenvio-mq
+app: reaseguro-vida-grupo
+
+frameworkVersion: '2.23.0'
+
+provider:
+  name: aws
+  runtime: nodejs10.x
+  timeout: 30
+  memorySize: 256
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'us-west-2'}
+  tags:
+    Application: reaseguros-control-desconexion
+    Environment: dev
+  environment:
+    MQ_HOST: b-5b033529-dd29-4cd5-8950-031a97339ade-1.mq.us-west-2.amazonaws.com
+    MQ_PASSWORD: MySuperSecurePassword
+    MQ_USERNAME: admin
+    MQ_PORT: 61619
+    APP_REGION: us-west-2
+    DDB_REINTENTOS_TOPE: 10
+    REDIS_HOST: cache-prueba.mr8fah.ng.0001.usw2.cache.amazonaws.com
+    REDIS_PORT: 6379
+
+package:
+  individually: true
+  exclude:
+    - node_modules/**
+  excludeDevDependencies: false
+
+plugins:
+  - serverless-plugin-include-dependencies
+  - serverless-offline
+  - serverless-step-functions
+
+functions:
+  reenvio-msq-mq:
+    handler: src/handlers/ReenvioHandler.handler
+    name: reenvioMsgMQ
+
+stepFunctions:
+  stateMachines:
+    reenvioStepFunc:
+      events:
+        - eventBridge:
+            event: 
+              source:
+                - "errores-desconexion"
+              detail-type:
+                - "Notificacion de desconexion de bd en aplicacion"
+              detail:
+                state:
+                  - pending
+      name: reintentoSateMachine
+      definition:
+        Comment: "Inicia reintento de encolamiento de msg en activeMQ"
+        StartAt: Espera
+        States:
+          Espera:
+            Type: Wait
+            Seconds: 10
+            Next: Reenvia_mensaje
+          Reenvia_mensaje:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [reenvio-msq-mq, Arn]
+            End: true
+      tags:
+        Application: reaseguros-control-desconexion
+
+resources:
+  Parameters:
+    RedisVPC:
+      Default: ""
+      Type: AWS::EC2::VPC::Id
+    RedisHost:
+      Default: ""
+      Type: String
+    RedisPort:
+      Default: 6379
+      Type: Number
+    
